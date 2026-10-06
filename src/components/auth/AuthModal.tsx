@@ -20,7 +20,9 @@ import {
   UserCheck,
   GraduationCap,
   Users,
-  Wallet
+  Wallet,
+  Copy,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -41,6 +43,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     signUpWithEmail,
     signInWithGoogle,
     resetPassword,
+    switchDemoUser
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'signin' | 'signup' | 'forgot'>(initialTab);
@@ -65,6 +68,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState(false);
+  const [showDomainHelp, setShowDomainHelp] = useState(false);
 
   if (!isOpen) return null;
 
@@ -140,6 +145,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // Google sign in
   const handleGoogleSignIn = async () => {
     clearMessages();
+    setShowDomainHelp(false);
     setLoading(true);
     const res = await signInWithGoogle(signUpRole);
     setLoading(false);
@@ -150,6 +156,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }, 900);
     } else {
       setErrorMessage(res.error || 'تعذر تسجيل الدخول عبر Google');
+      if (res.isUnauthorizedDomain) {
+        setShowDomainHelp(true);
+      }
     }
   };
 
@@ -231,9 +240,62 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="p-5 overflow-y-auto flex-1">
           {/* Notification Banners */}
           {errorMessage && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div className="flex-1">{errorMessage}</div>
+            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex flex-col gap-2 animate-in fade-in">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1 leading-relaxed">{errorMessage}</div>
+              </div>
+            </div>
+          )}
+
+          {showDomainHelp && (
+            <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-xs space-y-2.5 animate-in fade-in">
+              <div className="font-bold flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-amber-900 font-semibold">
+                  ⚡ خطوة لمرة واحدة في Firebase Console لتفعيل Google:
+                </span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-amber-850">
+                لحماية حسابك، يطلب Firebase إضافة نطاق التطبيق إلى قائمة <strong>Authorized domains</strong>:
+              </p>
+              <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-amber-200">
+                <span className="font-mono text-[11px] text-slate-800 flex-1 truncate select-all" dir="ltr">
+                  {typeof window !== 'undefined' ? window.location.hostname : ''}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      navigator.clipboard.writeText(window.location.hostname);
+                      setCopiedDomain(true);
+                      setTimeout(() => setCopiedDomain(false), 2000);
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-[11px] flex items-center gap-1 cursor-pointer shrink-0 transition-colors"
+                >
+                  {copiedDomain ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedDomain ? 'تم النسخ!' : 'نسخ النطاق'}</span>
+                </button>
+              </div>
+              <div className="text-[11px] text-amber-800 space-y-0.5">
+                <div>• اذهب إلى: Firebase Console ⬅️ مشروع <strong>school-86c0b</strong>.</div>
+                <div>• اختر <strong>Authentication</strong> ⬅️ <strong>Settings</strong> ⬅️ <strong>Authorized domains</strong>.</div>
+                <div>• اضغط <strong>Add domain</strong> والصق النطاق المنسوخ أعلاه.</div>
+              </div>
+              <div className="pt-2 border-t border-amber-200/80 flex items-center justify-between text-[11px]">
+                <span className="text-amber-800">أو يمكنك التسجيل بالبريد وكلمة المرور مباشرة:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchDemoUser('teacher');
+                    setSuccessMessage('تم الدخول بحساب تجريبي مؤقتاً للاختبار');
+                    setTimeout(onClose, 800);
+                  }}
+                  className="font-bold text-blue-700 hover:underline cursor-pointer"
+                >
+                  دخول تجريبي سريع ⬅️
+                </button>
+              </div>
             </div>
           )}
 

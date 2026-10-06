@@ -42,7 +42,7 @@ interface AuthContextType {
   firebaseConfig: FirebaseConfig;
   signInWithEmail: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   signUpWithEmail: (email: string, pass: string, fullName: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
-  signInWithGoogle: (role?: UserRole) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: (role?: UserRole) => Promise<{ success: boolean; error?: string; isUnauthorizedDomain?: boolean }>;
   resetPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => Promise<void>;
   updateCustomFirebaseConfig: (config: FirebaseConfig) => boolean;
@@ -97,11 +97,18 @@ export function translateFirebaseError(error: unknown): string {
   if (message.includes('auth/invalid-email')) {
     return 'صيغة البريد الإلكتروني غير صالحة';
   }
+  if (message.includes('auth/unauthorized-domain')) {
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
+    return `نطاق الموقع (${currentHost}) غير مضاف في قائمة النطاقات المعتمدة (Authorized Domains) في لوحة Firebase Console. يرجى إضافة هذا النطاق من قسم Authentication -> Settings -> Authorized domains.`;
+  }
+  if (message.includes('auth/popup-blocked')) {
+    return 'قام المتصفح بحظر النافذة المنبثقة لـ Google. يرجى السماح بالنوافذ المنبثقة (Popups) أو استخدام تسجيل الدخول بالبريد الإلكتروني.';
+  }
   if (message.includes('auth/popup-closed-by-user')) {
     return 'تم إغلاق نافذة تسجيل الدخول عبر Google قبل إتمام العملية';
   }
   if (message.includes('auth/operation-not-allowed')) {
-    return 'طريقة تسجيل الدخول هذه غير مفعلة حالياً في لوحة تحكم Firebase';
+    return 'تسجيل الدخول عبر Google غير مفعّل في لوحة Firebase. يرجى الدخول إلى Firebase Console -> Authentication -> Sign-in method وتفعيل خيار Google.';
   }
   if (message.includes('auth/network-request-failed')) {
     return 'فشل الاتصال بالشبكة، يرجى التحقق من اتصالك بالإنترنت';
@@ -265,7 +272,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // تسجيل الدخول عبر Google
-  const signInWithGoogle = async (role: UserRole = 'teacher'): Promise<{ success: boolean; error?: string }> => {
+  const signInWithGoogle = async (role: UserRole = 'teacher'): Promise<{ success: boolean; error?: string; isUnauthorizedDomain?: boolean }> => {
     const { auth, googleProvider, isConfigured: valid } = getFirebaseInstances();
 
     if (!valid || !auth || !googleProvider) {
@@ -291,7 +298,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem('noor_demo_logged_in');
       return { success: true };
     } catch (err) {
-      console.error('Firebase Google signIn error:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('auth/unauthorized-domain')) {
+        return {
+          success: false,
+          isUnauthorizedDomain: true,
+          error: translateFirebaseError(err)
+        };
+      }
       return { success: false, error: translateFirebaseError(err) };
     } finally {
       setLoading(false);

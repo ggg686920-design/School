@@ -8,6 +8,7 @@
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 export interface FirebaseConfig {
   apiKey: string;
@@ -55,7 +56,7 @@ export function getStoredFirebaseConfig(): FirebaseConfig {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
+      if (parsed && typeof parsed === 'object' && parsed.apiKey && parsed.apiKey.trim().length > 10) {
         return { ...DEFAULT_FIREBASE_CONFIG, ...parsed };
       }
     }
@@ -125,6 +126,7 @@ export function parseFirebaseConfigInput(input: string): Partial<FirebaseConfig>
 
 let activeApp: FirebaseApp | null = null;
 let activeAuth: Auth | null = null;
+let activeDb: Firestore | null = null;
 
 /**
  * تهيئة Firebase بالبيانات الحالية
@@ -132,6 +134,7 @@ let activeAuth: Auth | null = null;
 export function getFirebaseInstances(): {
   app: FirebaseApp | null;
   auth: Auth | null;
+  db: Firestore | null;
   googleProvider: GoogleAuthProvider | null;
   isConfigured: boolean;
 } {
@@ -139,7 +142,7 @@ export function getFirebaseInstances(): {
   const isValid = isFirebaseConfigValid(currentConfig);
 
   if (!isValid) {
-    return { app: null, auth: null, googleProvider: null, isConfigured: false };
+    return { app: null, auth: null, db: null, googleProvider: null, isConfigured: false };
   }
 
   try {
@@ -150,6 +153,9 @@ export function getFirebaseInstances(): {
     if (!activeAuth && activeApp) {
       activeAuth = getAuth(activeApp);
     }
+    if (!activeDb && activeApp) {
+      activeDb = getFirestore(activeApp);
+    }
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
@@ -157,11 +163,12 @@ export function getFirebaseInstances(): {
     return {
       app: activeApp,
       auth: activeAuth,
+      db: activeDb,
       googleProvider: provider,
       isConfigured: true
     };
   } catch (err) {
     console.warn('Firebase initialization error:', err);
-    return { app: null, auth: null, googleProvider: null, isConfigured: false };
+    return { app: null, auth: null, db: null, googleProvider: null, isConfigured: false };
   }
 }
