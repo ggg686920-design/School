@@ -34,23 +34,10 @@ import {
 } from '../types';
 
 export const INITIAL_SCHOOL_SETTINGS: SchoolSettings = {
-  name: 'ثانوية نور الكمال الأهلية',
-  logoUrl: '',
-  description: 'صرح تربوي وتعليمي متميز يعتمد أرقى المعايير الأكاديمية والتربوية المعتمدة لدى وزارة التربية العراقية',
-  address: 'بغداد - الكرخ - حي المنصور',
-  phone: '07701234567',
-  email: 'info@nooralkamal.edu.iq',
-  website: 'www.nooralkamal.edu.iq',
-  province: 'بغداد',
-  city: 'الكرخ',
-  currentAcademicYear: '2025-2026',
-  currency: 'د.ع',
-  currencyCode: 'IQD',
-  gradingSystem: '100',
-  principalName: 'أ. د. سرمد عبد الرزاق الراوي',
-  workHours: '7:30 ص - 2:00 م',
-  schoolAccessCode: 'NK-SEC-94721-KML', // كود المدرسة السري الأولي الافتراضي
-  schoolAccessCodeCreatedAt: '2026-01-01T08:00:00.000Z'
+  name: '', logoUrl: '', description: '', address: '', phone: '', email: '', website: '',
+  province: '', city: '', currentAcademicYear: '', currency: 'د.ع', currencyCode: 'IQD',
+  gradingSystem: '100', principalName: '', workHours: '7:30 ص - 2:00 م', schoolAccessCode: '',
+  schoolAccessCodeCreatedAt: ''
 };
 
 // الصفوف الدراسية المعتمدة في المنهج العراقي

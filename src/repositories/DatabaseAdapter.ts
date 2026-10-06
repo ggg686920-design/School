@@ -184,7 +184,7 @@ export interface IDatabaseAdapter {
 }
 
 const STORAGE_PREFIX = 'noor_alkamal_school_db_';
-const CLEAN_VERSION_FLAG = 'noor_alkamal_clean_v2_ready';
+const CLEAN_VERSION_FLAG = 'school_iraq_clean_v3_ready';
 
 export class LocalStorageDatabaseAdapter implements IDatabaseAdapter {
   constructor() {
@@ -197,15 +197,10 @@ export class LocalStorageDatabaseAdapter implements IDatabaseAdapter {
       // إذا كانت التخزينات السابقة تحتوي على بيانات تجريبية وهمية قديمة، نقوم بمسحها لتبدأ المدرسة نظيفة وحقيقية
       const isClean = localStorage.getItem(CLEAN_VERSION_FLAG);
       if (!isClean) {
-        // فحص إذا كان هناك بيانات وهمية سابقة
-        const oldStudents = localStorage.getItem(STORAGE_PREFIX + 'students');
-        if (oldStudents && oldStudents.includes('مصطفى أحمد كاظم')) {
-          const keys = Object.keys(localStorage);
-          for (const k of keys) {
-            if (k.startsWith(STORAGE_PREFIX)) {
-              localStorage.removeItem(k);
-            }
-          }
+        // تنظيف النسخ القديمة بالكامل: تبدأ كل مدرسة بمساحة فارغة وحقيقية.
+        const keys = Object.keys(localStorage);
+        for (const k of keys) {
+          if (k.startsWith(STORAGE_PREFIX)) localStorage.removeItem(k);
         }
         localStorage.setItem(CLEAN_VERSION_FLAG, 'true');
       }

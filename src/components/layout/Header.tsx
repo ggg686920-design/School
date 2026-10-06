@@ -56,11 +56,12 @@ export const Header: React.FC<HeaderProps> = ({
   }, [user?.role]);
 
   const rolesList: { id: UserRole; label: string; desc: string }[] = [
-    { id: 'admin', label: 'المدير العام', desc: 'صلاحيات إدارية ومالية كاملة' },
-    { id: 'teacher', label: 'أ. حيدر جاسم (مدرس)', desc: 'إدارة المواد والدرجات والغياب' },
-    { id: 'student', label: 'مصطفى العبيدي (طالب)', desc: 'استعراض الدرجات والجدول والشهادات' },
-    { id: 'parent', label: 'أحمد كاظم (ولي أمر)', desc: 'متابعة الأبناء والأقساط والحضور' },
-    { id: 'accountant', label: 'عثمان فؤاد (محاسب)', desc: 'إدارة الإيصالات والرواتب والمصروفات' },
+    { id: 'SCHOOL_OWNER', label: 'مالك المدرسة', desc: 'صلاحيات كاملة وإدارة إعدادات المدرسة' },
+    { id: 'SCHOOL_MANAGER', label: 'مدير المدرسة', desc: 'إدارة التشغيل والحضور والدرجات' },
+    { id: 'ACCOUNTANT', label: 'المحاسب المالي', desc: 'إدارة الأقساط والإيصالات والمصروفات' },
+    { id: 'teacher', label: 'الهيئة التعليمية', desc: 'إدارة المواد والدرجات والغياب' },
+    { id: 'parent', label: 'ولي أمر طالب', desc: 'متابعة الأبناء والأقساط والحضور' },
+    { id: 'student', label: 'طالب / طالبة', desc: 'استعراض الجدول والنتائج والشهادات' },
   ];
 
   const currentRoleInfo = rolesList.find(r => r.id === currentRole) || rolesList[0];
@@ -84,10 +85,10 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div>
               <div className="text-base font-bold tracking-tight text-white font-['Alexandria',sans-serif] whitespace-nowrap">
-                {settings.name || 'ثانوية نور الكمال'}
+                {settings.name || 'نظام إدارة المدارس الأهلية'}
               </div>
               <div className="text-[11px] text-blue-200/90 hidden sm:block whitespace-nowrap">
-                العام الدراسي {settings.currentAcademicYear} · {settings.province}
+                العام الدراسي {settings.currentAcademicYear || 'لم تُحدد السنة'} · {settings.province || 'لم تُحدد المحافظة'}
               </div>
             </div>
           </div>
