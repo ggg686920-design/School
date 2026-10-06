@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { SchoolProvider, useSchool } from './context/SchoolContext';
+import { AuthProvider } from './context/AuthContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { SearchModal } from './components/common/SearchModal';
@@ -154,8 +155,10 @@ const AppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <SchoolProvider>
-      <AppContent />
-    </SchoolProvider>
+    <AuthProvider>
+      <SchoolProvider>
+        <AppContent />
+      </SchoolProvider>
+    </AuthProvider>
   );
 }

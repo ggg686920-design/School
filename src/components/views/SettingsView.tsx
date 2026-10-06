@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { Settings, Save, School, Database, Shield, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { Settings, Save, School, RotateCcw, CheckCircle2 } from 'lucide-react';
 import { useSchool } from '../../context/SchoolContext';
 import { SchoolSettings } from '../../types';
 
@@ -181,38 +181,6 @@ export const SettingsView: React.FC = () => {
                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                 className="w-full p-2 border border-slate-200 rounded-lg outline-hidden focus:border-[#2563EB] font-mono"
               />
-            </div>
-          </div>
-        </div>
-
-        {/* Firebase Architecture Readiness Box (Section 40) */}
-        <div className="pt-4 border-t border-slate-100">
-          <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-200 space-y-2">
-            <div className="flex items-center gap-2 font-bold text-blue-900 text-xs">
-              <Database className="w-4 h-4 text-[#2563EB]" />
-              <span>جاهزية بنية Firebase Architecture (Section 2 & 40)</span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-relaxed">
-              تم بناء طبقة البيانات بنمط Repository Pattern المستقل تماماً (UI → Business Logic → Repository → Database Provider).
-              التطبيق يعمل حالياً عبر Local Storage Provider المترابط، وهو مهيأ ومطابق 100% للربط المباشر مع:
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px] font-semibold text-blue-900">
-              <div className="p-2 bg-white rounded border border-blue-100 flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Firebase Auth</span>
-              </div>
-              <div className="p-2 bg-white rounded border border-blue-100 flex items-center gap-1.5">
-                <Database className="w-3.5 h-3.5 text-blue-600" />
-                <span>Cloud Firestore</span>
-              </div>
-              <div className="p-2 bg-white rounded border border-blue-100 flex items-center gap-1.5">
-                <Save className="w-3.5 h-3.5 text-amber-600" />
-                <span>Firebase Storage</span>
-              </div>
-              <div className="p-2 bg-white rounded border border-blue-100 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-sky-600" />
-                <span>FCM Messaging</span>
-              </div>
             </div>
           </div>
         </div>
