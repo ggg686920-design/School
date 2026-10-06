@@ -5,7 +5,8 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/School/',
+    // Vercel serves from the domain root; GitHub Pages needs the repository prefix.
+    base: process.env.GITHUB_ACTIONS === 'true' ? '/School/' : '/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
