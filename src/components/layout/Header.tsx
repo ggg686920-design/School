@@ -56,12 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, [user?.role]);
 
   const rolesList: { id: UserRole; label: string; desc: string }[] = [
-    { id: 'SCHOOL_OWNER', label: 'مالك المدرسة', desc: 'صلاحيات كاملة وإدارة إعدادات المدرسة' },
-    { id: 'SCHOOL_MANAGER', label: 'مدير المدرسة', desc: 'إدارة التشغيل والحضور والدرجات' },
-    { id: 'ACCOUNTANT', label: 'المحاسب المالي', desc: 'إدارة الأقساط والإيصالات والمصروفات' },
-    { id: 'teacher', label: 'الهيئة التعليمية', desc: 'إدارة المواد والدرجات والغياب' },
-    { id: 'parent', label: 'ولي أمر طالب', desc: 'متابعة الأبناء والأقساط والحضور' },
-    { id: 'student', label: 'طالب / طالبة', desc: 'استعراض الجدول والنتائج والشهادات' },
+    { id: 'SCHOOL_OWNER', label: 'مالك المدرسة', desc: 'الحساب الرئيسي — جميع الصلاحيات' }
   ];
 
   const currentRoleInfo = rolesList.find(r => r.id === currentRole) || rolesList[0];
@@ -96,38 +91,10 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 2: Fast Navigation & Role Indicator */}
         <div className="hidden md:flex items-center gap-2">
-          <div className="relative">
-            <button
-              onClick={() => setShowRoleMenu(!showRoleMenu)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-900/70 border border-blue-700/60 hover:bg-blue-800 text-xs font-medium text-blue-100 transition-colors"
-            >
-              <UserCheck className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-slate-300">الدور الحالي:</span>
-              <span className="text-white font-semibold">{currentRoleInfo.label}</span>
-            </button>
-
-            {showRoleMenu && (
-              <div
-                className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-slate-900 animate-in fade-in zoom-in-95 duration-100"
-                onClick={() => setShowRoleMenu(false)}
-              >
-                <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 border-b border-slate-100">
-                  تبديل صلاحية المستخدم (RBAC)
-                </div>
-                {rolesList.map(r => (
-                  <button
-                    key={r.id}
-                    onClick={() => setCurrentRole(r.id)}
-                    className={`w-full text-right px-3 py-2 text-xs flex flex-col hover:bg-blue-50 transition-colors ${
-                      currentRole === r.id ? 'bg-blue-50/80 font-bold text-[#2563EB]' : 'text-slate-700'
-                    }`}
-                  >
-                    <span className="font-semibold">{r.label}</span>
-                    <span className="text-[10px] text-slate-400 font-normal">{r.desc}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-900/70 border border-blue-700/60 text-xs font-medium text-blue-100">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
+            <span className="text-slate-300">الحساب:</span>
+            <span className="text-white font-semibold">مالك المدرسة</span>
           </div>
 
           <button
@@ -162,7 +129,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {currentRole === 'admin' && (
+          {(currentRole === 'admin' || currentRole === 'SCHOOL_OWNER') && (
             <button
               onClick={onQuickAddStudent}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F59E0B] hover:bg-amber-600 text-slate-950 font-semibold text-xs transition-colors shadow-xs"

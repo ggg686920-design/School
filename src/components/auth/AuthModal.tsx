@@ -44,8 +44,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     signInWithEmail,
     signUpWithEmail,
     signInWithGoogle,
-    resetPassword,
-    switchDemoUser
+    resetPassword
   } = useAuth();
 
   const { verifyAccessCode, recordLoginAttempt } = useSchool();
@@ -64,7 +63,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
-  const [signUpRole, setSignUpRole] = useState<UserRole>('teacher');
+  const [signUpRole, setSignUpRole] = useState<UserRole>('SCHOOL_OWNER');
   const [signUpAccessCode, setSignUpAccessCode] = useState('');
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
@@ -242,12 +241,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const accountRoles: { id: UserRole; label: string; desc: string; icon: any; requiresCode: boolean }[] = [
-    { id: 'SCHOOL_OWNER', label: 'مالك المدرسة (SCHOOL_OWNER)', desc: 'صلاحيات مطلقة وإدارة كود المدرسة', icon: ShieldCheck, requiresCode: false },
-    { id: 'SCHOOL_MANAGER', label: 'مدير المدرسة (SCHOOL_MANAGER)', desc: 'إدارة تشغيلية (محجوبة عن المجاميع المالية)', icon: UserCheck, requiresCode: true },
-    { id: 'ACCOUNTANT', label: 'المحاسب المالي (ACCOUNTANT)', desc: 'إدارة الأقساط والرواتب والمصروفات', icon: Wallet, requiresCode: true },
-    { id: 'teacher', label: 'الهيئة التعليمية (المدرسون)', desc: 'إدارة المواد والدرجات والغياب', icon: GraduationCap, requiresCode: false },
-    { id: 'parent', label: 'ولي أمر طالب', desc: 'متابعة الأبناء والأقساط والنتائج', icon: Users, requiresCode: false },
-    { id: 'student', label: 'طالب / طالبة', desc: 'استعراض الجدول والشهادات والواجبات', icon: UserCheck, requiresCode: false },
+    { id: 'SCHOOL_OWNER', label: 'مالك المدرسة', desc: 'الحساب الرئيسي الوحيد بصلاحيات كاملة', icon: ShieldCheck, requiresCode: false }
   ];
 
   return (
@@ -258,10 +252,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div>
             <h2 className="text-base font-bold font-['Alexandria',sans-serif] flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-amber-300" />
-              بوابة الدخول الموحدة للمدرسة
+              بوابة مالك المدرسة
             </h2>
             <p className="text-xs text-blue-200 mt-0.5">
-              نظام إدارة المدارس العراقي المتكامل
+              نظام إدارة المدارس الأهلية
             </p>
           </div>
           <button
@@ -293,7 +287,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            إنشاء حساب جديد
+            إنشاء مساحة المدرسة
           </button>
         </div>
 
@@ -359,7 +353,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <form onSubmit={handleSignInSubmit} className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    صفة ونوع الحساب *
+                    نوع الحساب
                   </label>
                   <select
                     value={signInRole}
@@ -600,7 +594,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {loading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <span>إنشاء الحساب الآن</span>
+                    <span>إنشاء حساب المالك</span>
                   )}
                 </button>
               </form>
@@ -667,7 +661,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Footer info */}
         <div className="p-3 bg-slate-50 border-t border-slate-200 text-center text-[11px] text-slate-400">
-          نظام إدارة المدارس العراقي المتكامل · مصادقة آمنة ومشفرة
+          نظام إدارة المدارس الأهلية · مصادقة آمنة ومشفرة
         </div>
       </div>
     </div>

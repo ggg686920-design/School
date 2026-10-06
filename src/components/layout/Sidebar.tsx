@@ -1,153 +1,57 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- * 
- * Sidebar Component:
- * القائمة الرئيسية الشاملة طبقاً للبند 43 من متطلبات النظام
- */
-
 import React from 'react';
 import {
-  LayoutDashboard,
-  GraduationCap,
-  Users2,
-  Briefcase,
-  Layers,
-  BookOpen,
-  CalendarDays,
-  CheckCircle2,
-  FileSpreadsheet,
-  Award,
-  CreditCard,
-  Receipt,
-  Wallet,
-  Bus,
-  Megaphone,
-  Bell,
-  MessageSquare,
-  BarChart3,
-  Terminal,
-  Settings,
-  ShieldCheck,
-  X
+  LayoutDashboard, GraduationCap, Users2, Briefcase, Layers, BookOpen,
+  CalendarDays, CheckCircle2, FileSpreadsheet, Award, CreditCard, Receipt,
+  Wallet, Bus, Megaphone, Bell, MessageSquare, BarChart3, Terminal,
+  Settings, ShieldCheck, X, ChevronLeft, CircleHelp
 } from 'lucide-react';
 import { useSchool } from '../../context/SchoolContext';
 
-interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+interface SidebarProps { isOpen: boolean; onClose: () => void; }
+
+const groups = [
+  { label: 'المشهد العام', items: [
+    { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
+    { id: 'reports', label: 'التقارير والتحليلات', icon: BarChart3 },
+  ]},
+  { label: 'العملية التعليمية', items: [
+    { id: 'students', label: 'الطلاب والملفات', icon: GraduationCap },
+    { id: 'parents', label: 'أولياء الأمور', icon: Users2 },
+    { id: 'teachers', label: 'الكادر التعليمي', icon: Briefcase },
+    { id: 'staff', label: 'الموظفون', icon: Users2 },
+    { id: 'classes', label: 'الصفوف والشعب', icon: Layers },
+    { id: 'subjects', label: 'المواد الدراسية', icon: BookOpen },
+    { id: 'timetable', label: 'الجدول الأسبوعي', icon: CalendarDays },
+    { id: 'attendance', label: 'الحضور والغياب', icon: CheckCircle2 },
+    { id: 'exams', label: 'الامتحانات والدرجات', icon: FileSpreadsheet },
+    { id: 'certificates', label: 'الشهادات والنتائج', icon: Award },
+  ]},
+  { label: 'الإدارة والمالية', items: [
+    { id: 'fees', label: 'الأقساط والمدفوعات', icon: CreditCard },
+    { id: 'receipts', label: 'سندات القبض', icon: Receipt },
+    { id: 'expenses', label: 'المصروفات', icon: Wallet },
+    { id: 'payroll', label: 'الرواتب والأجور', icon: Briefcase },
+    { id: 'transport', label: 'النقل المدرسي', icon: Bus },
+    { id: 'announcements', label: 'الإعلانات والفعاليات', icon: Megaphone },
+    { id: 'notifications', label: 'الإشعارات', icon: Bell },
+    { id: 'messages', label: 'الرسائل والتواصل', icon: MessageSquare },
+  ]},
+  { label: 'الأدوات والحماية', items: [
+    { id: 'school_assistant', label: 'مساعد المدرسة', icon: Terminal },
+    { id: 'audit_log', label: 'سجل العمليات', icon: ShieldCheck },
+    { id: 'settings', label: 'إعدادات المدرسة', icon: Settings },
+  ]}
+];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { activeTab, setActiveTab, currentRole } = useSchool();
-
-  const navItems = [
-    { id: 'dashboard', label: 'لوحة التحكم الرئيسية', icon: LayoutDashboard, roles: ['admin', 'teacher', 'accountant', 'student', 'parent'] },
-    { id: 'students', label: 'إدارة الطلاب', icon: GraduationCap, roles: ['admin', 'teacher', 'accountant'] },
-    { id: 'parents', label: 'أولياء الأمور', icon: Users2, roles: ['admin', 'teacher'] },
-    { id: 'teachers', label: 'المدرسون والكوادر', icon: Briefcase, roles: ['admin'] },
-    { id: 'staff', label: 'الموظفون الإداريون', icon: Users2, roles: ['admin'] },
-    { id: 'classes', label: 'الصفوف والشعب', icon: Layers, roles: ['admin', 'teacher'] },
-    { id: 'subjects', label: 'المواد الدراسية', icon: BookOpen, roles: ['admin', 'teacher', 'student'] },
-    { id: 'timetable', label: 'الجدول الأسبوعي', icon: CalendarDays, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { id: 'attendance', label: 'الحضور والغياب', icon: CheckCircle2, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { id: 'exams', label: 'الامتحانات والدرجات', icon: FileSpreadsheet, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { id: 'certificates', label: 'الشهادات والنتائج', icon: Award, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { id: 'fees', label: 'الأقساط والمدفوعات', icon: CreditCard, roles: ['admin', 'accountant', 'parent', 'student'] },
-    { id: 'receipts', label: 'سندات القبض', icon: Receipt, roles: ['admin', 'accountant', 'parent'] },
-    { id: 'expenses', label: 'المصروفات التشغيلية', icon: Wallet, roles: ['admin', 'accountant'] },
-    { id: 'payroll', label: 'الرواتب والأجور', icon: Briefcase, roles: ['admin', 'accountant'] },
-    { id: 'transport', label: 'النقل المدرسي', icon: Bus, roles: ['admin', 'teacher', 'parent', 'student'] },
-    { id: 'announcements', label: 'الإعلانات والفعاليات', icon: Megaphone, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { id: 'notifications', label: 'الإشعارات والتنبيهات', icon: Bell, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { id: 'messages', label: 'الرسائل والتواصل', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { id: 'reports', label: 'التقارير والإحصائيات', icon: BarChart3, roles: ['admin', 'accountant'] },
-    { id: 'school_assistant', label: 'School Assistant (مساعد المدرسة)', icon: Terminal, roles: ['admin', 'teacher', 'accountant'] },
-    { id: 'audit_log', label: 'سجل العمليات', icon: ShieldCheck, roles: ['admin'] },
-    { id: 'settings', label: 'إعدادات المدرسة', icon: Settings, roles: ['admin'] },
-  ];
-
-  const visibleItems = navItems.filter(item => item.roles.includes(currentRole));
-
-  const handleSelect = (id: string) => {
-    setActiveTab(id);
-    onClose();
-  };
-
-  return (
-    <>
-      {/* Mobile Backdrop */}
-      {isOpen && (
-        <div
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden no-print"
-        />
-      )}
-
-      {/* Sidebar Container */}
-      <aside
-        className={`fixed lg:sticky top-0 right-0 z-40 h-screen w-64 bg-white border-l border-slate-200 flex flex-col transition-transform duration-200 ease-in-out no-print ${
-          isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
-        }`}
-      >
-        {/* Mobile Header in Drawer */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-100 lg:hidden">
-          <span className="text-sm font-bold text-slate-800">قائمة النظام</span>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
-            aria-label="إغلاق القائمة"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Section Navigation list */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          <div className="px-3 pb-2 text-[11px] font-semibold text-slate-400 tracking-wider">
-            الأقسام والخدمات
-          </div>
-
-          {visibleItems.map(item => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleSelect(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg transition-colors text-right ${
-                  isActive
-                    ? 'bg-blue-50 text-[#2563EB] font-bold border-r-2 border-[#2563EB]'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <Icon
-                  className={`w-4 h-4 shrink-0 ${
-                    isActive ? 'text-[#2563EB]' : 'text-slate-400'
-                  }`}
-                />
-                <span className="truncate">{item.label}</span>
-                {item.id === 'school_assistant' && (
-                  <span className="mr-auto text-[10px] bg-blue-100 text-blue-800 font-semibold px-1.5 py-0.2 rounded">
-                    أوامر
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Footer info: School Year & Database Provider */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/60 text-[11px] text-slate-500">
-          <div className="flex items-center justify-between">
-            <span>قاعدة البيانات:</span>
-            <span className="font-semibold text-emerald-600">جاهزة لـ Firebase</span>
-          </div>
-          <div className="mt-1 text-[10px] text-slate-400">
-            Repository Data Layer Active
-          </div>
-        </div>
-      </aside>
-    </>
-  );
+  const { activeTab, setActiveTab } = useSchool();
+  return <>
+    {isOpen && <div onClick={onClose} className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden no-print" />}
+    <aside className={`owner-sidebar fixed lg:sticky top-0 right-0 z-40 h-screen w-72 flex flex-col transition-transform duration-300 no-print ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+      <div className="sidebar-mobile-head lg:hidden"><strong>قائمة النظام</strong><button onClick={onClose} aria-label="إغلاق القائمة"><X /></button></div>
+      <div className="sidebar-brand"><div className="sidebar-brand-mark"><ShieldCheck /></div><div><strong>مساحة المالك</strong><small>إدارة المدرسة من مكان واحد</small></div></div>
+      <div className="sidebar-scroll">{groups.map(group => <div className="sidebar-group" key={group.label}><div className="sidebar-group-label">{group.label}</div>{group.items.map(item => { const Icon = item.icon; const active = activeTab === item.id; return <button key={item.id} onClick={() => { setActiveTab(item.id); onClose(); }} className={`sidebar-item ${active ? 'active' : ''}`}><Icon /><span>{item.label}</span>{active && <ChevronLeft className="sidebar-active-arrow" />}</button>; })}</div>)}</div>
+      <div className="sidebar-footer"><div className="sidebar-secure"><ShieldCheck /><span><strong>وضع المالك</strong><small>كل الصلاحيات مفعلة</small></span><span className="secure-dot" /></div><button onClick={() => setActiveTab('school_assistant')} className="sidebar-help"><CircleHelp /> تحتاج مساعدة؟</button></div>
+    </aside>
+  </>;
 };

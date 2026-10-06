@@ -68,8 +68,11 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const loadData = async () => {
     try {
       const s = await dbInstance.getSettings();
-      setSettings(s);
-      setSchoolAccessCode(s.schoolAccessCode || 'NK-SEC-94721-KML');
+      const isKnownTestSetup = ['مدرسة المستقبل الأهلية', 'مدرسة اختبار المدرسة'].includes(s.name) || String(s.principalName || '').includes('اختبار');
+      const cleanSettings = isKnownTestSetup ? INITIAL_SCHOOL_SETTINGS : s;
+      if (isKnownTestSetup) await dbInstance.saveSettings(INITIAL_SCHOOL_SETTINGS);
+      setSettings(cleanSettings);
+      setSchoolAccessCode(cleanSettings.schoolAccessCode || '');
       
       const m = await schoolServiceInstance.getDashboardMetrics(currentRole);
       setMetrics(m);

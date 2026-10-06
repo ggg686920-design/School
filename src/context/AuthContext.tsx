@@ -46,24 +46,14 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => Promise<void>;
   updateCustomFirebaseConfig: (config: FirebaseConfig) => boolean;
-  switchDemoUser: (role: UserRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const USER_ROLES_STORAGE_KEY = 'noor_alkamal_user_roles';
 
-function getStoredRoleForUid(uid: string, fallbackRole: UserRole = 'teacher'): UserRole {
-  try {
-    const raw = localStorage.getItem(USER_ROLES_STORAGE_KEY);
-    if (raw) {
-      const map = JSON.parse(raw);
-      if (map[uid]) return map[uid] as UserRole;
-    }
-  } catch {
-    // ignore
-  }
-  return fallbackRole;
+function getStoredRoleForUid(_uid: string, _fallbackRole: UserRole = 'SCHOOL_OWNER'): UserRole {
+  return 'SCHOOL_OWNER';
 }
 
 function saveRoleForUid(uid: string, role: UserRole): void {
@@ -133,11 +123,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (auth && valid) {
       const unsubscribe = onAuthStateChanged(auth, (fbUser: FirebaseUser | null) => {
         if (fbUser) {
-          const role = getStoredRoleForUid(fbUser.uid, 'teacher');
+          const role = 'SCHOOL_OWNER';
           setUser({
             uid: fbUser.uid,
             email: fbUser.email || '',
-            displayName: fbUser.displayName || fbUser.email?.split('@')[0] || 'مستخدم المدرسة',
+            displayName: String(fbUser.displayName || '').includes('اختبار') ? 'مالك المدرسة' : (fbUser.displayName || fbUser.email?.split('@')[0] || 'مالك المدرسة'),
             role,
             photoURL: fbUser.photoURL || undefined,
             isFirebaseUser: true
@@ -147,7 +137,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const demoUserRaw = localStorage.getItem('noor_demo_logged_in');
           if (demoUserRaw) {
             try {
-              setUser(JSON.parse(demoUserRaw));
+              const parsed = JSON.parse(demoUserRaw);
+              setUser({ ...parsed, role: 'SCHOOL_OWNER', displayName: String(parsed.displayName || '').includes('اختبار') ? 'مالك المدرسة' : (parsed.displayName || 'مالك المدرسة') });
             } catch {
               setUser(null);
             }
@@ -164,7 +155,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const demoUserRaw = localStorage.getItem('noor_demo_logged_in');
       if (demoUserRaw) {
         try {
-          setUser(JSON.parse(demoUserRaw));
+          const parsed = JSON.parse(demoUserRaw);
+          setUser({ ...parsed, role: 'SCHOOL_OWNER', displayName: String(parsed.displayName || '').includes('اختبار') ? 'مالك المدرسة' : (parsed.displayName || 'مالك المدرسة') });
         } catch {
           setUser(null);
         }
@@ -188,12 +180,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (!valid || !auth) {
       // إذا لم يُدخل المستخدم إعدادات Firebase بعد، نتيح له الدخول التجريبي مع تنبيه
-      const mockRole = email.includes('admin') ? 'admin' : email.includes('parent') ? 'parent' : email.includes('student') ? 'student' : 'teacher';
       const mockUser: AppUser = {
-        uid: 'demo-' + Date.now(),
+        uid: 'local-owner-' + Date.now(),
         email,
-        displayName: email.split('@')[0] || 'مستخدم تجريبي',
-        role: mockRole as UserRole,
+        displayName: email.split('@')[0] || 'مالك المدرسة',
+        role: 'SCHOOL_OWNER',
         isFirebaseUser: false
       };
       setUser(mockUser);
@@ -204,11 +195,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setLoading(true);
       const cred = await signInWithEmailAndPassword(auth, email, pass);
-      const role = getStoredRoleForUid(cred.user.uid, 'teacher');
+      const role = 'SCHOOL_OWNER';
       setUser({
         uid: cred.user.uid,
         email: cred.user.email || email,
-        displayName: cred.user.displayName || email.split('@')[0],
+        displayName: String(cred.user.displayName || '').includes('اختبار') ? 'مالك المدرسة' : (cred.user.displayName || email.split('@')[0] || 'مالك المدرسة'),
         role,
         photoURL: cred.user.photoURL || undefined,
         isFirebaseUser: true
@@ -235,10 +226,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!valid || !auth) {
       // وضع تجريبي إذا لم تكن البيانات مدخلة
       const mockUser: AppUser = {
-        uid: 'demo-' + Date.now(),
+        uid: 'local-owner-' + Date.now(),
         email,
         displayName: fullName,
-        role,
+        role: 'SCHOOL_OWNER',
         isFirebaseUser: false
       };
       setUser(mockUser);
@@ -272,7 +263,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // تسجيل الدخول عبر Google
-  const signInWithGoogle = async (role: UserRole = 'teacher'): Promise<{ success: boolean; error?: string; isUnauthorizedDomain?: boolean }> => {
+  const signInWithGoogle = async (_role: UserRole = 'SCHOOL_OWNER'): Promise<{ success: boolean; error?: string; isUnauthorizedDomain?: boolean }> => {
     const { auth, googleProvider, isConfigured: valid } = getFirebaseInstances();
 
     if (!valid || !auth || !googleProvider) {
@@ -285,12 +276,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setLoading(true);
       const cred = await signInWithPopup(auth, googleProvider);
-      const existingRole = getStoredRoleForUid(cred.user.uid, role);
+      const existingRole = 'SCHOOL_OWNER';
       saveRoleForUid(cred.user.uid, existingRole);
       setUser({
         uid: cred.user.uid,
         email: cred.user.email || '',
-        displayName: cred.user.displayName || 'مستخدم Google',
+        displayName: String(cred.user.displayName || '').includes('اختبار') ? 'مالك المدرسة' : (cred.user.displayName || 'مالك المدرسة'),
         role: existingRole,
         photoURL: cred.user.photoURL || undefined,
         isFirebaseUser: true
@@ -319,7 +310,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!valid || !auth) {
       return {
         success: true,
-        message: 'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح (محاكاة)'
+        message: 'تم تجهيز رابط استعادة كلمة المرور. فعّل Firebase لإرسال البريد فعلياً.'
       };
     }
 
@@ -348,26 +339,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
-  // تبديل مستخدم تجريبي سريع للاختبار
-  const switchDemoUser = (role: UserRole) => {
-    const roleNames: Partial<Record<UserRole, { name: string; email: string }>> = {
-      admin: { name: 'أ. د. كمال الحديثي (المدير العام)', email: 'admin@nooralkamal.iq' },
-      teacher: { name: 'أ. حيدر جاسم (مدرس فيزياء)', email: 'haidar@nooralkamal.iq' },
-      student: { name: 'مصطفى أحمد العبيدي (طالب)', email: 'mustafa@nooralkamal.iq' },
-      parent: { name: 'أحمد كاظم العبيدي (ولي أمر)', email: 'parent.ahmed@nooralkamal.iq' },
-      accountant: { name: 'عثمان فؤاد (محاسب المدرسة)', email: 'accountant@nooralkamal.iq' }
-    };
-    const info = roleNames[role] || { name: 'مستخدم النظام', email: 'user@nooralkamal.iq' };
-    const demoUser: AppUser = {
-      uid: 'demo-' + role,
-      email: info.email,
-      displayName: info.name,
-      role,
-      isFirebaseUser: false
-    };
-    setUser(demoUser);
-    localStorage.setItem('noor_demo_logged_in', JSON.stringify(demoUser));
-  };
+
 
   return (
     <AuthContext.Provider
@@ -382,7 +354,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         resetPassword,
         logout,
         updateCustomFirebaseConfig,
-        switchDemoUser
       }}
     >
       {children}
