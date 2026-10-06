@@ -4,7 +4,7 @@
  * 
  * School Context:
  * يوفر حالة النظام الشاملة، بيانات المدرسة، الدور الحالي (RBAC)،
- * وتحديثات قاعدة البيانات المتصلة
+ * وتطبيق حظر المجاميع المالية عن المدير برمجياً
  */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -12,11 +12,11 @@ import {
   SchoolSettings,
   UserRole,
   NotificationItem,
-  SmartAlert
+  SmartAlert,
+  LoginAttemptLog
 } from '../types';
 import { IDatabaseAdapter, LocalStorageDatabaseAdapter } from '../repositories/DatabaseAdapter';
 import { SchoolService, DashboardMetrics } from '../services/SchoolService';
-import { AIService } from '../services/AIService';
 import { INITIAL_SCHOOL_SETTINGS } from '../repositories/seedData';
 
 interface SchoolContextType {
@@ -28,7 +28,6 @@ interface SchoolContextType {
   setActiveTab: (tab: string) => void;
   db: IDatabaseAdapter;
   schoolService: SchoolService;
-  aiService: AIService;
   metrics: DashboardMetrics | null;
   notifications: NotificationItem[];
   unreadCount: number;
@@ -39,33 +38,50 @@ interface SchoolContextType {
   resetToDefault: () => Promise<void>;
   selectedStudentId: string;
   setSelectedStudentId: (id: string) => void;
+  
+  // كود أمان المدرسة
+  schoolAccessCode: string;
+  verifyAccessCode: (code: string) => Promise<boolean>;
+  regenerateAccessCode: () => Promise<string>;
+  
+  // سجل محاولات الدخول
+  loginAttempts: LoginAttemptLog[];
+  recordLoginAttempt: (attempt: Omit<LoginAttemptLog, 'id' | 'timestamp'>) => Promise<void>;
 }
 
 const dbInstance: IDatabaseAdapter = new LocalStorageDatabaseAdapter();
 const schoolServiceInstance = new SchoolService(dbInstance);
-const aiServiceInstance = new AIService(dbInstance, schoolServiceInstance);
 
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
 
 export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<SchoolSettings>(INITIAL_SCHOOL_SETTINGS);
-  const [currentRole, setCurrentRole] = useState<UserRole>('admin');
+  const [currentRole, setCurrentRole] = useState<UserRole>('SCHOOL_OWNER');
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [smartAlerts, setSmartAlerts] = useState<SmartAlert[]>([]);
-  const [selectedStudentId, setSelectedStudentId] = useState<string>('std-1');
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [schoolAccessCode, setSchoolAccessCode] = useState<string>('NK-SEC-94721-KML');
+  const [loginAttempts, setLoginAttempts] = useState<LoginAttemptLog[]>([]);
 
   const loadData = async () => {
     try {
       const s = await dbInstance.getSettings();
       setSettings(s);
-      const m = await schoolServiceInstance.getDashboardMetrics();
+      setSchoolAccessCode(s.schoolAccessCode || 'NK-SEC-94721-KML');
+      
+      const m = await schoolServiceInstance.getDashboardMetrics(currentRole);
       setMetrics(m);
+      
       const n = await dbInstance.getNotifications();
       setNotifications(n);
-      const al = await dbInstance.getSmartAlerts();
+      
+      const al = await schoolServiceInstance.getSystemRuleAlerts();
       setSmartAlerts(al);
+
+      const attempts = await dbInstance.getLoginAttempts();
+      setLoginAttempts(attempts);
     } catch (err) {
       console.error('Failed to load school state:', err);
     }
@@ -73,7 +89,7 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentRole]);
 
   const updateSettings = async (newSettings: SchoolSettings) => {
     await dbInstance.saveSettings(newSettings);
@@ -92,8 +108,30 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const resetToDefault = async () => {
-    await dbInstance.resetToInitialDemo();
+    await dbInstance.resetToInitialClean();
     await loadData();
+  };
+
+  const verifyAccessCode = async (code: string): Promise<boolean> => {
+    return dbInstance.verifySchoolAccessCode(code);
+  };
+
+  const regenerateAccessCode = async (): Promise<string> => {
+    const newCode = await dbInstance.regenerateSchoolAccessCode();
+    setSchoolAccessCode(newCode);
+    const updatedSettings = await dbInstance.getSettings();
+    setSettings(updatedSettings);
+    return newCode;
+  };
+
+  const recordLoginAttempt = async (attempt: Omit<LoginAttemptLog, 'id' | 'timestamp'>) => {
+    const log: LoginAttemptLog = {
+      id: 'log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      ...attempt,
+      timestamp: new Date().toISOString()
+    };
+    await dbInstance.logLoginAttempt(log);
+    setLoginAttempts(prev => [log, ...prev].slice(0, 100));
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -109,7 +147,6 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setActiveTab,
         db: dbInstance,
         schoolService: schoolServiceInstance,
-        aiService: aiServiceInstance,
         metrics,
         notifications,
         unreadCount,
@@ -119,7 +156,12 @@ export const SchoolProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         refreshData: loadData,
         resetToDefault,
         selectedStudentId,
-        setSelectedStudentId
+        setSelectedStudentId,
+        schoolAccessCode,
+        verifyAccessCode,
+        regenerateAccessCode,
+        loginAttempts,
+        recordLoginAttempt
       }}
     >
       {children}

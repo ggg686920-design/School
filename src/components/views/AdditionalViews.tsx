@@ -606,11 +606,11 @@ export const ReportsView: React.FC = () => {
             </div>
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
               <span className="text-slate-500 block">إجمالي الإيرادات المحصلة:</span>
-              <span className="text-lg font-bold text-[#16A34A] font-mono">{metrics.totalRevenueCollected.toLocaleString()} د.ع</span>
+              <span className="text-lg font-bold text-[#16A34A] font-mono">{(metrics.totalRevenueCollected ?? 0).toLocaleString()} د.ع</span>
             </div>
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
               <span className="text-slate-500 block">الديون المتأخرة:</span>
-              <span className="text-lg font-bold text-[#DC2626] font-mono">{metrics.totalDebtsRemaining.toLocaleString()} د.ع</span>
+              <span className="text-lg font-bold text-[#DC2626] font-mono">{(metrics.totalDebtsRemaining ?? 0).toLocaleString()} د.ع</span>
             </div>
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
               <span className="text-slate-500 block">نسبة الحضور اليومية:</span>
@@ -620,7 +620,7 @@ export const ReportsView: React.FC = () => {
         )}
 
         <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-          <h3 className="font-bold text-slate-900 mb-2">توصيات المساعد الذكي والإدارة:</h3>
+          <h3 className="font-bold text-slate-900 mb-2">توصيات الإدارة ومساعد المدرسة:</h3>
           <p className="text-slate-600 leading-relaxed">
             تشير الإحصائيات إلى استقرار تام في العملية التربوية ونسب حضور تتجاوز 95%. يوصى بتكثيف المتابعة المالية للديون المتبقية لضمان تحصيل الأقساط قبل انطلاق الامتحانات النهائية.
           </p>

@@ -1,6 +1,6 @@
 {
   "name": "نظام إدارة المدارس الذكي | ثانوية نور الكمال",
-  "description": "نظام متكامل واحترافي لإدارة المدارس والطلاب والمدرسين والمالية والشهادات والجداول مدعوم بالذكاء الاصطناعي",
+  "description": "نظام متكامل واحترافي لإدارة المدارس والطلبة والمدرسين والمالية والشهادات والجداول",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

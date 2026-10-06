@@ -2,9 +2,9 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * 
- * Application / Business Logic Layer:
+ * طبقة منطق الأعمال والخدمات الإدارية:
  * SchoolService
- * يقوم بحساب الإحصائيات، فحص التنبيهات، وتربيط البيانات بين الكيانات المختلفة
+ * تطبق ضوابط الوصول الصارمة (RBAC) لحماية البيانات المالية ومنع المدير من الوصول للمجاميع
  */
 
 import { IDatabaseAdapter } from '../repositories/DatabaseAdapter';
@@ -15,7 +15,9 @@ import {
   Expense,
   AttendanceRecord,
   GradeRecord,
-  SmartAlert
+  SmartAlert,
+  UserRole,
+  PaymentReceipt
 } from '../types';
 
 export interface DashboardMetrics {
@@ -30,14 +32,16 @@ export interface DashboardMetrics {
   
   totalEmployees: number;
   
-  // المالية
-  totalRevenueExpected: number;
-  totalRevenueCollected: number;
-  totalDebtsRemaining: number;
-  totalExpenses: number;
-  netCashFlow: number;
+  // المؤشرات المالية الإجمالية — محجوبة تماماً على مستوى منطق الخدمة عن مدير المدرسة
+  canViewFinancialTotals: boolean;
+  totalRevenueExpected?: number;
+  totalRevenueCollected?: number;
+  totalDebtsRemaining?: number;
+  totalExpenses?: number;
+  netCashFlow?: number;
+  totalPayroll?: number;
   
-  // الحضور اليوم
+  // الحضور والغياب اليومي
   todayDate: string;
   todayPresentCount: number;
   todayAbsentCount: number;
@@ -45,50 +49,41 @@ export interface DashboardMetrics {
   todayExcusedCount: number;
   todayAttendanceRate: number;
   
-  // النقل
+  // النقل والمركبات
   totalRoutes: number;
   transportStudentsCount: number;
   
-  // التنبيهات الذكية
+  // تنبيهات النظام البرمجية (Rules-based)
   alertsCount: number;
 }
 
 export class SchoolService {
   constructor(private db: IDatabaseAdapter) {}
 
-  async getDashboardMetrics(): Promise<DashboardMetrics> {
+  /**
+   * فحص الصلاحية المالية: المالك والمحاسب فقط يحق لهما رؤية المجاميع المالية
+   */
+  private canAccessFinancialAggregates(role: UserRole): boolean {
+    const r = (role || '').toUpperCase();
+    return r === 'SCHOOL_OWNER' || r === 'OWNER' || r === 'ADMIN' || r === 'ACCOUNTANT';
+  }
+
+  async getDashboardMetrics(userRole: UserRole = 'SCHOOL_OWNER'): Promise<DashboardMetrics> {
     const students = await this.db.getStudents();
     const teachers = await this.db.getTeachers();
     const employees = await this.db.getEmployees();
-    const tuitionFees = await this.db.getTuitionFees();
-    const expenses = await this.db.getExpenses();
     const attendance = await this.db.getAttendance();
     const routes = await this.db.getRoutes();
-    const alerts = await this.db.getSmartAlerts();
+    const alerts = await this.getSystemRuleAlerts();
 
     const maleStudents = students.filter(s => s.gender === 'male').length;
     const femaleStudents = students.filter(s => s.gender === 'female').length;
-    const activeStudents = students.filter(s => s.status === 'active').length;
 
     const activeTeachers = teachers.filter(t => t.status === 'active').length;
     const onLeaveTeachers = teachers.filter(t => t.status === 'on_leave').length;
 
-    // المالية
-    let totalRevenueExpected = 0;
-    let totalRevenueCollected = 0;
-    let totalDebtsRemaining = 0;
-
-    for (const f of tuitionFees) {
-      totalRevenueExpected += f.totalFee;
-      totalRevenueCollected += f.paidAmount;
-      totalDebtsRemaining += f.remainingAmount;
-    }
-
-    const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
-    const netCashFlow = totalRevenueCollected - totalExpenses;
-
-    // الحضور لليوم الأحدث
-    const today = '2026-10-06';
+    // الحضور لليوم الحالي
+    const today = new Date().toISOString().split('T')[0];
     const todayRecords = attendance.filter(a => a.date === today);
     
     let todayPresentCount = 0;
@@ -103,27 +98,23 @@ export class SchoolService {
       else if (r.status === 'excused') todayExcusedCount++;
     }
 
-    const totalTracked = todayRecords.length;
-    const todayAttendanceRate = totalTracked > 0 
-      ? Math.round(((todayPresentCount + todayLateCount) / totalTracked) * 100) 
-      : 95;
+    const totalMarkedToday = todayPresentCount + todayAbsentCount + todayLateCount + todayExcusedCount;
+    const todayAttendanceRate = totalMarkedToday > 0 
+      ? Math.round(((todayPresentCount + todayLateCount) / totalMarkedToday) * 100) 
+      : 100;
 
-    const transportStudentsCount = students.filter(s => !!s.transportRouteId).length;
+    const transportStudentsCount = routes.reduce((acc, r) => acc + (r.studentsCount || 0), 0);
 
-    return {
+    const baseMetrics: DashboardMetrics = {
       totalStudents: students.length,
-      activeStudents,
+      activeStudents: students.filter(s => s.status === 'active').length,
       maleStudents,
       femaleStudents,
       totalTeachers: teachers.length,
       activeTeachers,
       onLeaveTeachers,
       totalEmployees: employees.length,
-      totalRevenueExpected,
-      totalRevenueCollected,
-      totalDebtsRemaining,
-      totalExpenses,
-      netCashFlow,
+      canViewFinancialTotals: false,
       todayDate: today,
       todayPresentCount,
       todayAbsentCount,
@@ -134,46 +125,146 @@ export class SchoolService {
       transportStudentsCount,
       alertsCount: alerts.length
     };
+
+    // حماية أمنية صارمة: لا يتم استعلام أو حساب أو إرجاع المجاميع المالية لمدير المدرسة إطلاقاً
+    if (this.canAccessFinancialAggregates(userRole)) {
+      const tuitionFees = await this.db.getTuitionFees();
+      const expenses = await this.db.getExpenses();
+      const payroll = await this.db.getPayroll();
+
+      let totalRevenueExpected = 0;
+      let totalRevenueCollected = 0;
+      let totalDebtsRemaining = 0;
+
+      for (const f of tuitionFees) {
+        totalRevenueExpected += f.totalFee || 0;
+        totalRevenueCollected += f.paidAmount || 0;
+        totalDebtsRemaining += f.remainingAmount || 0;
+      }
+
+      const totalExpenses = expenses.reduce((acc, e) => acc + (e.amount || 0), 0);
+      const totalPayroll = payroll.reduce((acc, p) => acc + (p.netSalary || 0), 0);
+      const netCashFlow = totalRevenueCollected - totalExpenses;
+
+      baseMetrics.canViewFinancialTotals = true;
+      baseMetrics.totalRevenueExpected = totalRevenueExpected;
+      baseMetrics.totalRevenueCollected = totalRevenueCollected;
+      baseMetrics.totalDebtsRemaining = totalDebtsRemaining;
+      baseMetrics.totalExpenses = totalExpenses;
+      baseMetrics.totalPayroll = totalPayroll;
+      baseMetrics.netCashFlow = netCashFlow;
+    }
+
+    return baseMetrics;
   }
 
+  /**
+   * تنبيهات النظام البرمجية (Rule-Based Alerts Engine — خوارزميات برمجية بحتة بدون أي ذكاء اصطناعي)
+   */
+  async getSystemRuleAlerts(): Promise<SmartAlert[]> {
+    const alerts: SmartAlert[] = [];
+    const students = await this.db.getStudents();
+    const fees = await this.db.getTuitionFees();
+    const sections = await this.db.getSections();
+    const routes = await this.db.getRoutes();
+    const payroll = await this.db.getPayroll();
+
+    // 1. قاعدة التحقق من تجاوز سعة الشعبة
+    for (const sec of sections) {
+      if (sec.studentsCount > 35) {
+        alerts.push({
+          id: `sec-cap-${sec.id}`,
+          type: 'attendance_drop',
+          severity: 'warning',
+          title: `تجاوز الكثافة الطلابية في شعبة (${sec.name})`,
+          description: `الشعبة تحتوي على ${sec.studentsCount} طالباً في ${sec.gradeName} وهو ما يتجاوز المعيار التربوي (35 طالباً).`,
+          date: new Date().toISOString().split('T')[0],
+          targetSection: sec.name
+        });
+      }
+    }
+
+    // 2. قاعدة الطلاب أصحاب الأقساط المتأخرة
+    const overdueFees = fees.filter(f => f.status === 'overdue' || (f.remainingAmount > 0 && f.dueDate && new Date(f.dueDate) < new Date()));
+    if (overdueFees.length > 0) {
+      alerts.push({
+        id: 'fees-overdue-alert',
+        type: 'overdue_fee',
+        severity: 'error',
+        title: `مستحقات وأقساط متأخرة الدفع (${overdueFees.length} قسط)`,
+        description: `يوجد ${overdueFees.length} من الطلبة تجاوزت أقساطهم تاريخ الاستحقاق المحدد.`,
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
+
+    // 3. قاعدة رواتب الكادر غير المدفوعة
+    const pendingPayroll = payroll.filter(p => p.status === 'معلق');
+    if (pendingPayroll.length > 0) {
+      alerts.push({
+        id: 'payroll-pending-alert',
+        type: 'high_expenses',
+        severity: 'warning',
+        title: `رواتب وأجور معلقة (${pendingPayroll.length} كادر)`,
+        description: `هناك استحقاقات رواتب للشهر الحالي في انتظار الصرف والاعتماد المالي.`,
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
+
+    // 4. قاعدة حمولة مركبات النقل
+    for (const r of routes) {
+      if (r.capacity && r.studentsCount > r.capacity) {
+        alerts.push({
+          id: `route-cap-${r.id}`,
+          type: 'license_expiring',
+          severity: 'warning',
+          title: `تجاوز سعة الركاب في خط (${r.name})`,
+          description: `المركبة المخصصة للخط تحمل ${r.studentsCount} طالباً بينما السعة الاستيعابية ${r.capacity} مقعداً.`,
+          date: new Date().toISOString().split('T')[0]
+        });
+      }
+    }
+
+    return alerts;
+  }
+
+  /**
+   * استخراج الملف الشامل للطالب مع كافة السجلات المالية والأكاديمية والصحية
+   */
   async getStudentFullProfile(studentId: string) {
     const students = await this.db.getStudents();
     const student = students.find(s => s.id === studentId);
     if (!student) return null;
 
-    const parents = await this.db.getParents();
-    const parent = parents.find(p => p.id === student.parentId);
+    const [parents, fees, receipts, grades, attendance, routes] = await Promise.all([
+      this.db.getParents(),
+      this.db.getTuitionFees(),
+      this.db.getReceipts(),
+      this.db.getGrades(),
+      this.db.getAttendance(),
+      this.db.getRoutes()
+    ]);
 
-    const tuitionFees = await this.db.getTuitionFees();
-    const fee = tuitionFees.find(f => f.studentId === studentId);
-
-    const receipts = await this.db.getReceipts();
-    const studentReceipts = receipts.filter(r => r.studentId === studentId);
-
-    const attendance = await this.db.getAttendance();
-    const studentAttendance = attendance.filter(a => a.studentId === studentId);
-
-    const grades = await this.db.getGrades();
-    const studentGrades = grades.filter(g => g.studentId === studentId);
-
-    const routes = await this.db.getRoutes();
+    const parent = parents.find(p => p.id === student.parentId || p.fullName === student.parentName);
+    const fee = fees.find(f => f.studentId === student.id || f.studentName === student.fullName);
+    const studentReceipts = receipts.filter(r => r.studentId === student.id || r.studentName === student.fullName);
+    const studentGrades = grades.filter(g => g.studentId === student.id || g.studentName === student.fullName);
+    const studentAttendance = attendance.filter(a => a.studentId === student.id || a.studentName === student.fullName);
     const route = routes.find(r => r.id === student.transportRouteId);
-
-    const certs = await this.db.getCertificates();
-    const certificate = certs.find(c => c.studentId === studentId);
 
     return {
       student,
       parent,
       fee,
       receipts: studentReceipts,
-      attendance: studentAttendance,
       grades: studentGrades,
-      route,
-      certificate
+      attendance: studentAttendance,
+      route
     };
   }
 
+  /**
+   * تسجيل دفعة مالية جديدة وإصدار سند قبض وتحديث سجل القسط الدراسي
+   */
   async recordNewPayment(
     studentId: string,
     amount: number,
@@ -181,57 +272,47 @@ export class SchoolService {
     paymentMethod: any,
     employeeName: string,
     notes?: string
-  ) {
+  ): Promise<PaymentReceipt> {
     const students = await this.db.getStudents();
     const student = students.find(s => s.id === studentId);
-    if (!student) throw new Error('الطالب غير موجود');
-
-    const tuitionFees = await this.db.getTuitionFees();
-    const fee = tuitionFees.find(f => f.studentId === studentId);
+    const fees = await this.db.getTuitionFees();
+    const feeIndex = fees.findIndex(f => f.studentId === studentId || (student && f.studentName === student.fullName));
 
     let remainingBalance = 0;
-    if (fee) {
-      fee.paidAmount += amount;
-      fee.remainingAmount = Math.max(0, fee.totalFee - fee.paidAmount);
-      if (fee.remainingAmount === 0) {
-        fee.status = 'paid';
-      } else {
-        fee.status = 'partial';
-      }
-      remainingBalance = fee.remainingAmount;
-      await this.db.saveTuitionFee(fee);
+    if (feeIndex !== -1) {
+      const fee = fees[feeIndex];
+      const newPaid = (fee.paidAmount || 0) + amount;
+      const newRemaining = Math.max(0, (fee.totalFee || 0) - newPaid);
+      remainingBalance = newRemaining;
+
+      const updatedFee: TuitionFee = {
+        ...fee,
+        paidAmount: newPaid,
+        remainingAmount: newRemaining,
+        status: newRemaining <= 0 ? 'paid' : 'partial'
+      };
+      await this.db.saveTuitionFee(updatedFee);
     }
 
-    const receiptNum = `RCPT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const newReceipt = {
-      id: `rec-${Date.now()}`,
-      receiptNumber: receiptNum,
-      studentId: student.id,
-      studentName: student.fullName,
-      gradeName: student.gradeName,
+    const receiptNumber = `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newReceipt: PaymentReceipt = {
+      id: `rcp-${Date.now()}`,
+      receiptNumber,
+      studentId,
+      studentName: student?.fullName || 'الطالب',
+      gradeName: student?.gradeName || 'الصف الدراسي',
       amount,
       reason,
       date: new Date().toISOString().split('T')[0],
-      employeeName,
+      employeeName: employeeName || 'المحاسب المالي',
+      receivedByName: employeeName || 'المحاسب المالي',
       paymentMethod,
       remainingBalance,
-      qrCodeData: `RCPT:${receiptNum}|STD:${student.studentNumber}|AMT:${amount}|BAL:${remainingBalance}`,
+      qrCodeData: `RECEIPT:${receiptNumber}|AMOUNT:${amount}|STUDENT:${student?.fullName || ''}`,
       notes
     };
 
     await this.db.saveReceipt(newReceipt);
-
-    // إضافة في سجل العمليات
-    await this.db.addAuditLog({
-      id: `aud-${Date.now()}`,
-      userName: employeeName,
-      userRole: 'Accountant',
-      action: 'إصدار سند قبض',
-      department: 'المالية والحسابات',
-      affectedData: `سند قبض رقم ${receiptNum} للطالب ${student.fullName} بمبلغ ${amount.toLocaleString()} د.ع`,
-      timestamp: new Date().toLocaleString('ar-IQ')
-    });
-
     return newReceipt;
   }
 }

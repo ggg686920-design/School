@@ -350,14 +350,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // تبديل مستخدم تجريبي سريع للاختبار
   const switchDemoUser = (role: UserRole) => {
-    const roleNames: Record<UserRole, { name: string; email: string }> = {
+    const roleNames: Partial<Record<UserRole, { name: string; email: string }>> = {
       admin: { name: 'أ. د. كمال الحديثي (المدير العام)', email: 'admin@nooralkamal.iq' },
       teacher: { name: 'أ. حيدر جاسم (مدرس فيزياء)', email: 'haidar@nooralkamal.iq' },
       student: { name: 'مصطفى أحمد العبيدي (طالب)', email: 'mustafa@nooralkamal.iq' },
       parent: { name: 'أحمد كاظم العبيدي (ولي أمر)', email: 'parent.ahmed@nooralkamal.iq' },
       accountant: { name: 'عثمان فؤاد (محاسب المدرسة)', email: 'accountant@nooralkamal.iq' }
     };
-    const info = roleNames[role];
+    const info = roleNames[role] || { name: 'مستخدم النظام', email: 'user@nooralkamal.iq' };
     const demoUser: AppUser = {
       uid: 'demo-' + role,
       email: info.email,

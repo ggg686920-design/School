@@ -12,7 +12,7 @@ import {
   Wallet,
   CheckCircle2,
   AlertTriangle,
-  Sparkles,
+  Terminal,
   TrendingUp,
   Receipt,
   UserPlus,
@@ -54,7 +54,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             مرحباً بك في {settings.name}
           </h1>
           <p className="text-xs text-blue-100/90 mt-1 max-w-xl leading-relaxed">
-            النظام يعمل بكفاءة كاملة. يمكنك إدارة بيانات الطلاب والكوادر التعليمية، متابعة التحصيل المالي، واستخدام الذكاء الاصطناعي لتحليل مؤشرات الأداء.
+            النظام يعمل بكفاءة كاملة. يمكنك إدارة بيانات الطلاب والكوادر التعليمية، متابعة التحصيل المالي، واستعراض إحصاءات وأوامر قاعدة البيانات الدقيقة عبر مساعد المدرسة.
           </p>
         </div>
 
@@ -82,16 +82,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center justify-between pb-3 border-b border-amber-200/60 mb-3">
             <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
               <ShieldAlert className="w-4 h-4 text-amber-600" />
-              <span>تنبيهات الذكاء الاصطناعي الاستباقية (AI Smart Alerts)</span>
+              <span>التنبيهات البرمجية والرقابية الاستباقية (System Smart Alerts)</span>
               <span className="text-[11px] bg-amber-200 text-amber-900 px-2 py-0.2 rounded-full font-mono">
                 {smartAlerts.length} تنبيهات
               </span>
             </div>
             <button
-              onClick={() => setActiveTab('ai_assistant')}
+              onClick={() => setActiveTab('school_assistant')}
               className="text-xs text-amber-900 hover:text-amber-950 font-medium flex items-center gap-1"
             >
-              <span>تحليل مفصل</span>
+              <span>مركز الأوامر</span>
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -141,19 +141,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         />
         <StatCard
           title="المبالغ المحصلة من الأقساط"
-          value={`${metrics.totalRevenueCollected.toLocaleString()} ${settings.currency}`}
-          subtitle={`المتبقي ديون: ${metrics.totalDebtsRemaining.toLocaleString()} ${settings.currency}`}
+          value={`${(metrics.totalRevenueCollected ?? 0).toLocaleString()} ${settings.currency}`}
+          subtitle={`المتبقي ديون: ${(metrics.totalDebtsRemaining ?? 0).toLocaleString()} ${settings.currency}`}
           icon={Wallet}
           badge={{
-            text: `${Math.round((metrics.totalRevenueCollected / metrics.totalRevenueExpected) * 100)}% تحصيل`,
+            text: `${Math.round(((metrics.totalRevenueCollected ?? 0) / (metrics.totalRevenueExpected || 1)) * 100)}% تحصيل`,
             type: 'warning'
           }}
           onClick={() => setActiveTab('fees')}
         />
         <StatCard
           title="المصروفات التشغيلية"
-          value={`${metrics.totalExpenses.toLocaleString()} ${settings.currency}`}
-          subtitle={`صافي السيولة: ${metrics.netCashFlow.toLocaleString()} ${settings.currency}`}
+          value={`${(metrics.totalExpenses ?? 0).toLocaleString()} ${settings.currency}`}
+          subtitle={`صافي السيولة: ${(metrics.netCashFlow ?? 0).toLocaleString()} ${settings.currency}`}
           icon={TrendingUp}
           badge={{ text: 'تحت السيطرة', type: 'info' }}
           onClick={() => setActiveTab('expenses')}
@@ -234,73 +234,73 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="flex justify-between items-center py-1 border-b border-slate-50">
               <span className="text-slate-600">إجمالي الأقساط المقررة:</span>
               <span className="font-bold text-slate-900 font-mono">
-                {metrics.totalRevenueExpected.toLocaleString()} {settings.currency}
+                {(metrics.totalRevenueExpected ?? 0).toLocaleString()} {settings.currency}
               </span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-50">
               <span className="text-slate-600">المحصل فعلياً:</span>
               <span className="font-bold text-[#16A34A] font-mono">
-                {metrics.totalRevenueCollected.toLocaleString()} {settings.currency}
+                {(metrics.totalRevenueCollected ?? 0).toLocaleString()} {settings.currency}
               </span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-50">
               <span className="text-slate-600">الديون المتبقية بذمة الطلاب:</span>
               <span className="font-bold text-[#DC2626] font-mono">
-                {metrics.totalDebtsRemaining.toLocaleString()} {settings.currency}
+                {(metrics.totalDebtsRemaining ?? 0).toLocaleString()} {settings.currency}
               </span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-50">
               <span className="text-slate-600">المصروفات التشغيلية والرواتب:</span>
               <span className="font-bold text-slate-900 font-mono">
-                {metrics.totalExpenses.toLocaleString()} {settings.currency}
+                {(metrics.totalExpenses ?? 0).toLocaleString()} {settings.currency}
               </span>
             </div>
             <div className="flex justify-between items-center pt-2 bg-blue-50/60 p-2.5 rounded-lg border border-blue-100">
               <span className="font-bold text-blue-900">صافي السيولة النقدية:</span>
               <span className="font-bold text-[#2563EB] font-mono text-sm">
-                {metrics.netCashFlow.toLocaleString()} {settings.currency}
+                {(metrics.netCashFlow ?? 0).toLocaleString()} {settings.currency}
               </span>
             </div>
           </div>
         </div>
 
-        {/* AI School Assistant Quick Card */}
+        {/* School Assistant Quick Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 text-[#2563EB] text-xs font-bold mb-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>AI School Assistant</span>
+              <Terminal className="w-4 h-4 text-blue-600" />
+              <span>School Assistant</span>
             </div>
             <h2 className="text-base font-bold text-slate-900 font-['Alexandria',sans-serif]">
-              المساعد الذكي لإدارة المدرسة
+              مساعد المدرسة (مركز الأوامر البرمجية)
             </h2>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              طرح استفسارات إدارية ذكية: كم طالب غائب اليوم؟ ما إجمالي المصروفات؟ توليد أسئلة امتحانية للمدرسين، واكتشاف مؤشرات التراجع للطلاب.
+              مركز استعلامات وأوامر برمجية مباشرة: جرد الطلبة، موقف حضور اليوم، كشف الأقساط المتبقية، إحصاءات الكادر التدريسي والنتائج مستخرجة مباشرة من قاعدة البيانات.
             </p>
 
             <div className="mt-4 space-y-1.5">
               <button
-                onClick={() => setActiveTab('ai_assistant')}
+                onClick={() => setActiveTab('school_assistant')}
                 className="w-full text-right p-2 rounded-lg bg-slate-50 hover:bg-blue-50 hover:text-[#2563EB] text-xs text-slate-700 transition-colors border border-slate-100 flex items-center justify-between"
               >
-                <span>«ما هو الصف والشعبة الأعلى تحصيلاً دراسياً؟»</span>
+                <span>«جرد جميع الطلبة في المدرسة وموقف الدوام»</span>
                 <ChevronLeft className="w-3.5 h-3.5 text-slate-400" />
               </button>
               <button
-                onClick={() => setActiveTab('ai_assistant')}
+                onClick={() => setActiveTab('school_assistant')}
                 className="w-full text-right p-2 rounded-lg bg-slate-50 hover:bg-blue-50 hover:text-[#2563EB] text-xs text-slate-700 transition-colors border border-slate-100 flex items-center justify-between"
               >
-                <span>«توليد أسئلة اختبار لطلبة السادس في الفيزياء»</span>
+                <span>«كشف الأقساط المتبقية والطلبة المتأخرين بالسداد»</span>
                 <ChevronLeft className="w-3.5 h-3.5 text-slate-400" />
               </button>
             </div>
           </div>
 
           <button
-            onClick={() => setActiveTab('ai_assistant')}
+            onClick={() => setActiveTab('school_assistant')}
             className="mt-4 w-full py-2 bg-[#1E3A8A] hover:bg-blue-900 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
           >
-            <span>فتح نافذة المساعد الذكي الكاملة</span>
+            <span>فتح مركز أوامر مساعد المدرسة</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>

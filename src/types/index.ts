@@ -5,7 +5,17 @@
  * نظام إدارة المدارس الذكي — نماذج البيانات والأنواع الأساسية
  */
 
-export type UserRole = 'admin' | 'teacher' | 'student' | 'parent' | 'accountant';
+export type UserRole = 
+  | 'SCHOOL_OWNER' 
+  | 'SCHOOL_MANAGER' 
+  | 'ACCOUNTANT' 
+  | 'admin' 
+  | 'owner'
+  | 'manager'
+  | 'accountant' 
+  | 'teacher' 
+  | 'student' 
+  | 'parent';
 
 export interface SchoolSettings {
   name: string;
@@ -23,6 +33,58 @@ export interface SchoolSettings {
   gradingSystem: string;
   principalName: string;
   workHours: string;
+  schoolAccessCode: string; // كود الدخول السري الموحد للمدرسة
+  schoolAccessCodeCreatedAt?: string;
+}
+
+export interface LoginAttemptLog {
+  id: string;
+  email: string;
+  role: string;
+  timestamp: string;
+  success: boolean;
+  failureReason?: string;
+}
+
+export interface SchoolCommandResult {
+  title: string;
+  category: string;
+  summaryCards: { label: string; value: string | number; color?: string }[];
+  columns: { key: string; label: string }[];
+  rows: Record<string, any>[];
+  notes?: string;
+}
+
+export interface HomeworkAssignment {
+  id: string;
+  title: string;
+  subjectName: string;
+  gradeName: string;
+  sectionName: string;
+  teacherName: string;
+  dueDate: string;
+  createdAt: string;
+  description: string;
+  submissionsCount: number;
+}
+
+export interface StudentAchievement {
+  id: string;
+  studentId: string;
+  studentName: string;
+  badge: 'الطالب المثالي' | 'متفوق دراسياً' | 'حضور كامل' | 'أعلى معدل' | 'طالب ملتزم';
+  points: number;
+  dateAwarded: string;
+  reason: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  type: 'امتحان' | 'واجب' | 'عطلة' | 'اجتماع' | 'فعالية' | 'قسط' | 'نشاط';
+  date: string;
+  time?: string;
+  description?: string;
 }
 
 export interface UserAccount {
@@ -155,8 +217,8 @@ export interface Section {
   gradeId: string;
   gradeName: string;
   name: string;
-  homeroomTeacherId: string;
-  homeroomTeacherName: string;
+  homeroomTeacherId?: string;
+  homeroomTeacherName?: string;
   roomNumber: string;
   studentsCount: number;
 }
@@ -168,12 +230,12 @@ export interface Subject {
   stage: string;
   gradeId: string;
   gradeName: string;
-  teacherId: string;
-  teacherName: string;
-  weeklyClasses: number;
-  maxScore: number;
-  passingScore: number;
-  description: string;
+  teacherId?: string;
+  teacherName?: string;
+  weeklyClasses?: number;
+  maxScore?: number;
+  passingScore?: number;
+  description?: string;
 }
 
 export interface TimetableSlot {
@@ -273,6 +335,7 @@ export interface PaymentReceipt {
   reason: 'قسط دراسي' | 'كتب وقرطاسية' | 'زي مدرسي' | 'نقل مدرسي' | 'رسوم امتحانات' | 'رسوم إضافية';
   date: string;
   employeeName: string;
+  receivedByName?: string;
   paymentMethod: 'نقدي' | 'تحويل زين كاش' | 'بطاقة كي كارد' | 'حساب مصرفي';
   remainingBalance: number;
   qrCodeData: string;

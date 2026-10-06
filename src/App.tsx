@@ -24,7 +24,7 @@ import { ReceiptsView } from './components/views/ReceiptsView';
 import { ExpensesView } from './components/views/ExpensesView';
 import { PayrollView } from './components/views/PayrollView';
 import { TransportView } from './components/views/TransportView';
-import { AIAssistantView } from './components/views/AIAssistantView';
+import { SchoolAssistantView } from './components/views/SchoolAssistantView';
 import { SettingsView } from './components/views/SettingsView';
 import {
   ParentsView,
@@ -106,8 +106,9 @@ const AppContent: React.FC = () => {
         return <MessagesView />;
       case 'reports':
         return <ReportsView />;
+      case 'school_assistant':
       case 'ai_assistant':
-        return <AIAssistantView />;
+        return <SchoolAssistantView />;
       case 'audit_log':
         return <AuditLogView />;
       case 'settings':

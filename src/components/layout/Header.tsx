@@ -14,7 +14,7 @@ import {
   Search,
   UserCheck,
   GraduationCap,
-  Sparkles,
+  Terminal,
   Menu,
   School as SchoolIcon,
   Plus,
@@ -130,11 +130,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <button
-            onClick={() => setActiveTab('ai_assistant')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-800/60 border border-blue-700/50 hover:bg-blue-700/60 text-xs font-medium text-amber-300 hover:text-amber-200 transition-colors"
+            onClick={() => setActiveTab('school_assistant')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-800/60 border border-blue-700/50 hover:bg-blue-700/60 text-xs font-medium text-blue-100 hover:text-white transition-colors"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>المساعد الذكي</span>
+            <Terminal className="w-3.5 h-3.5 text-blue-300" />
+            <span>مساعد المدرسة</span>
           </button>
         </div>
 

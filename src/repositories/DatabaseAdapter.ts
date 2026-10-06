@@ -2,9 +2,8 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * 
- * Data Layer Architecture:
- * Database Adapter Interface & Implementations
- * يدعم التبديل السلس بين Local Storage Provider و Firebase Firestore مستقبلاً
+ * طبقة البيانات المركزية لنظام إدارة المدارس العراقي
+ * يدعم التخزين المحلي الآمن وقاعدة بيانات Firebase الحقيقية
  */
 
 import {
@@ -31,17 +30,25 @@ import {
   NotificationItem,
   MessageItem,
   AuditLog,
-  SmartAlert
+  SmartAlert,
+  LoginAttemptLog,
+  HomeworkAssignment,
+  StudentAchievement,
+  CalendarEvent
 } from '../types';
 
 import {
   INITIAL_SCHOOL_SETTINGS,
   INITIAL_CLASSES,
   INITIAL_SECTIONS,
+  INITIAL_SUBJECTS,
   INITIAL_PARENTS,
   INITIAL_STUDENTS,
   INITIAL_TEACHERS,
-  INITIAL_SUBJECTS,
+  INITIAL_EMPLOYEES,
+  INITIAL_DRIVERS,
+  INITIAL_VEHICLES,
+  INITIAL_ROUTES,
   INITIAL_TIMETABLE,
   INITIAL_ATTENDANCE,
   INITIAL_GRADES,
@@ -50,10 +57,6 @@ import {
   INITIAL_RECEIPTS,
   INITIAL_EXPENSES,
   INITIAL_PAYROLL,
-  INITIAL_EMPLOYEES,
-  INITIAL_DRIVERS,
-  INITIAL_VEHICLES,
-  INITIAL_ROUTES,
   INITIAL_ANNOUNCEMENTS,
   INITIAL_NOTIFICATIONS,
   INITIAL_MESSAGES,
@@ -65,54 +68,77 @@ export interface IDatabaseAdapter {
   getSettings(): Promise<SchoolSettings>;
   saveSettings(settings: SchoolSettings): Promise<void>;
 
+  // كود أمان دخول المدرسة
+  getSchoolAccessCode(): Promise<string>;
+  verifySchoolAccessCode(inputCode: string): Promise<boolean>;
+  regenerateSchoolAccessCode(): Promise<string>;
+
+  // سجل محاولات الدخول الحساسة
+  getLoginAttempts(): Promise<LoginAttemptLog[]>;
+  logLoginAttempt(attempt: LoginAttemptLog): Promise<void>;
+
+  // الطلبة
   getStudents(): Promise<Student[]>;
   saveStudent(student: Student): Promise<void>;
   deleteStudent(id: string): Promise<void>;
 
+  // أولياء الأمور
   getParents(): Promise<Parent[]>;
   saveParent(parent: Parent): Promise<void>;
 
+  // الهيئة التعليمية
   getTeachers(): Promise<Teacher[]>;
   saveTeacher(teacher: Teacher): Promise<void>;
   deleteTeacher(id: string): Promise<void>;
 
+  // الموظفون
   getEmployees(): Promise<Employee[]>;
   saveEmployee(employee: Employee): Promise<void>;
 
+  // الصفوف والشعب
   getClasses(): Promise<ClassGrade[]>;
   saveClass(cls: ClassGrade): Promise<void>;
 
   getSections(): Promise<Section[]>;
   saveSection(section: Section): Promise<void>;
 
+  // المواد
   getSubjects(): Promise<Subject[]>;
   saveSubject(subject: Subject): Promise<void>;
 
+  // الجدول الدراسي
   getTimetable(): Promise<TimetableSlot[]>;
   saveTimetableSlot(slot: TimetableSlot): Promise<void>;
   deleteTimetableSlot(id: string): Promise<void>;
 
+  // الحضور والغياب
   getAttendance(): Promise<AttendanceRecord[]>;
   recordAttendance(records: AttendanceRecord[]): Promise<void>;
 
+  // الدرجات والامتحانات
   getGrades(): Promise<GradeRecord[]>;
   saveGrade(grade: GradeRecord): Promise<void>;
 
+  // الشهادات
   getCertificates(): Promise<Certificate[]>;
   saveCertificate(cert: Certificate): Promise<void>;
 
+  // الأقساط والمدفوعات وسندات القبض
   getTuitionFees(): Promise<TuitionFee[]>;
   saveTuitionFee(fee: TuitionFee): Promise<void>;
 
   getReceipts(): Promise<PaymentReceipt[]>;
   saveReceipt(receipt: PaymentReceipt): Promise<void>;
 
+  // المصروفات
   getExpenses(): Promise<Expense[]>;
   saveExpense(expense: Expense): Promise<void>;
 
+  // الرواتب والأجور
   getPayroll(): Promise<PayrollRecord[]>;
   savePayroll(payroll: PayrollRecord): Promise<void>;
 
+  // النقل والمركبات
   getRoutes(): Promise<TransportRoute[]>;
   saveRoute(route: TransportRoute): Promise<void>;
 
@@ -122,16 +148,22 @@ export interface IDatabaseAdapter {
   getVehicles(): Promise<Vehicle[]>;
   saveVehicle(vehicle: Vehicle): Promise<void>;
 
-  getAnnouncements(): Promise<Announcement[]>;
-  saveAnnouncement(announcement: Announcement): Promise<void>;
-  deleteAnnouncement(id: string): Promise<void>;
+  // الواجبات والأنشطة
+  getHomework(): Promise<HomeworkAssignment[]>;
+  saveHomework(hw: HomeworkAssignment): Promise<void>;
 
+  // إنجازات وتحفيز الطلبة
+  getAchievements(): Promise<StudentAchievement[]>;
+  saveAchievement(ach: StudentAchievement): Promise<void>;
+
+  // التقويم المدرسي
+  getCalendarEvents(): Promise<CalendarEvent[]>;
+  saveCalendarEvent(ev: CalendarEvent): Promise<void>;
+
+  // الإشعارات وسجل العمليات
   getNotifications(): Promise<NotificationItem[]>;
   markNotificationRead(id: string): Promise<void>;
   addNotification(notif: NotificationItem): Promise<void>;
-
-  getMessages(): Promise<MessageItem[]>;
-  sendMessage(message: MessageItem): Promise<void>;
 
   getAuditLogs(): Promise<AuditLog[]>;
   addAuditLog(log: AuditLog): Promise<void>;
@@ -139,12 +171,49 @@ export interface IDatabaseAdapter {
   getSmartAlerts(): Promise<SmartAlert[]>;
   resolveSmartAlert(id: string): Promise<void>;
 
-  resetToInitialDemo(): Promise<void>;
+  // الإعلانات والفعاليات
+  getAnnouncements(): Promise<Announcement[]>;
+  saveAnnouncement(announcement: Announcement): Promise<void>;
+
+  // الرسائل والتواصل
+  getMessages(): Promise<MessageItem[]>;
+  sendMessage(message: MessageItem): Promise<void>;
+
+  // تنظيف شامل
+  resetToInitialClean(): Promise<void>;
 }
 
 const STORAGE_PREFIX = 'noor_alkamal_school_db_';
+const CLEAN_VERSION_FLAG = 'noor_alkamal_clean_v2_ready';
 
 export class LocalStorageDatabaseAdapter implements IDatabaseAdapter {
+  constructor() {
+    this.ensureCleanDataOnBoot();
+  }
+
+  private ensureCleanDataOnBoot(): void {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      // إذا كانت التخزينات السابقة تحتوي على بيانات تجريبية وهمية قديمة، نقوم بمسحها لتبدأ المدرسة نظيفة وحقيقية
+      const isClean = localStorage.getItem(CLEAN_VERSION_FLAG);
+      if (!isClean) {
+        // فحص إذا كان هناك بيانات وهمية سابقة
+        const oldStudents = localStorage.getItem(STORAGE_PREFIX + 'students');
+        if (oldStudents && oldStudents.includes('مصطفى أحمد كاظم')) {
+          const keys = Object.keys(localStorage);
+          for (const k of keys) {
+            if (k.startsWith(STORAGE_PREFIX)) {
+              localStorage.removeItem(k);
+            }
+          }
+        }
+        localStorage.setItem(CLEAN_VERSION_FLAG, 'true');
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   private getItem<T>(key: string, defaultValue: T): T {
     try {
       const data = localStorage.getItem(STORAGE_PREFIX + key);
@@ -163,11 +232,49 @@ export class LocalStorageDatabaseAdapter implements IDatabaseAdapter {
   }
 
   async getSettings(): Promise<SchoolSettings> {
-    return this.getItem('settings', INITIAL_SCHOOL_SETTINGS);
+    const s = this.getItem('settings', INITIAL_SCHOOL_SETTINGS);
+    if (!s.schoolAccessCode) {
+      s.schoolAccessCode = 'NK-SEC-94721-KML';
+      this.setItem('settings', s);
+    }
+    return s;
   }
 
   async saveSettings(settings: SchoolSettings): Promise<void> {
     this.setItem('settings', settings);
+  }
+
+  async getSchoolAccessCode(): Promise<string> {
+    const s = await this.getSettings();
+    return s.schoolAccessCode || 'NK-SEC-94721-KML';
+  }
+
+  async verifySchoolAccessCode(inputCode: string): Promise<boolean> {
+    if (!inputCode) return false;
+    const currentCode = await this.getSchoolAccessCode();
+    return inputCode.trim() === currentCode.trim();
+  }
+
+  async regenerateSchoolAccessCode(): Promise<string> {
+    const randPart1 = Math.floor(10000 + Math.random() * 90000);
+    const randChars = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const newCode = `NK-SEC-${randPart1}-${randChars}`;
+    const s = await this.getSettings();
+    s.schoolAccessCode = newCode;
+    s.schoolAccessCodeCreatedAt = new Date().toISOString();
+    await this.saveSettings(s);
+    return newCode;
+  }
+
+  async getLoginAttempts(): Promise<LoginAttemptLog[]> {
+    return this.getItem('login_attempts', []);
+  }
+
+  async logLoginAttempt(attempt: LoginAttemptLog): Promise<void> {
+    const list = await this.getLoginAttempts();
+    list.unshift(attempt);
+    if (list.length > 100) list.pop(); // keep last 100
+    this.setItem('login_attempts', list);
   }
 
   async getStudents(): Promise<Student[]> {
@@ -452,24 +559,36 @@ export class LocalStorageDatabaseAdapter implements IDatabaseAdapter {
     this.setItem('vehicles', list);
   }
 
-  async getAnnouncements(): Promise<Announcement[]> {
-    return this.getItem('announcements', INITIAL_ANNOUNCEMENTS);
+  async getHomework(): Promise<HomeworkAssignment[]> {
+    return this.getItem('homework', []);
   }
 
-  async saveAnnouncement(announcement: Announcement): Promise<void> {
-    const list = await this.getAnnouncements();
-    const index = list.findIndex(a => a.id === announcement.id);
-    if (index >= 0) {
-      list[index] = announcement;
-    } else {
-      list.unshift(announcement);
-    }
-    this.setItem('announcements', list);
+  async saveHomework(hw: HomeworkAssignment): Promise<void> {
+    const list = await this.getHomework();
+    const index = list.findIndex(h => h.id === hw.id);
+    if (index >= 0) list[index] = hw;
+    else list.unshift(hw);
+    this.setItem('homework', list);
   }
 
-  async deleteAnnouncement(id: string): Promise<void> {
-    const list = await this.getAnnouncements();
-    this.setItem('announcements', list.filter(a => a.id !== id));
+  async getAchievements(): Promise<StudentAchievement[]> {
+    return this.getItem('achievements', []);
+  }
+
+  async saveAchievement(ach: StudentAchievement): Promise<void> {
+    const list = await this.getAchievements();
+    list.unshift(ach);
+    this.setItem('achievements', list);
+  }
+
+  async getCalendarEvents(): Promise<CalendarEvent[]> {
+    return this.getItem('calendar_events', []);
+  }
+
+  async saveCalendarEvent(ev: CalendarEvent): Promise<void> {
+    const list = await this.getCalendarEvents();
+    list.push(ev);
+    this.setItem('calendar_events', list);
   }
 
   async getNotifications(): Promise<NotificationItem[]> {
@@ -491,16 +610,6 @@ export class LocalStorageDatabaseAdapter implements IDatabaseAdapter {
     this.setItem('notifications', list);
   }
 
-  async getMessages(): Promise<MessageItem[]> {
-    return this.getItem('messages', INITIAL_MESSAGES);
-  }
-
-  async sendMessage(message: MessageItem): Promise<void> {
-    const list = await this.getMessages();
-    list.push(message);
-    this.setItem('messages', list);
-  }
-
   async getAuditLogs(): Promise<AuditLog[]> {
     return this.getItem('auditLogs', INITIAL_AUDIT_LOGS);
   }
@@ -520,7 +629,27 @@ export class LocalStorageDatabaseAdapter implements IDatabaseAdapter {
     this.setItem('smartAlerts', list.filter(a => a.id !== id));
   }
 
-  async resetToInitialDemo(): Promise<void> {
+  async getAnnouncements(): Promise<Announcement[]> {
+    return this.getItem('announcements', INITIAL_ANNOUNCEMENTS);
+  }
+
+  async saveAnnouncement(announcement: Announcement): Promise<void> {
+    const list = await this.getAnnouncements();
+    list.unshift(announcement);
+    this.setItem('announcements', list);
+  }
+
+  async getMessages(): Promise<MessageItem[]> {
+    return this.getItem('messages', INITIAL_MESSAGES);
+  }
+
+  async sendMessage(message: MessageItem): Promise<void> {
+    const list = await this.getMessages();
+    list.push(message);
+    this.setItem('messages', list);
+  }
+
+  async resetToInitialClean(): Promise<void> {
     try {
       const keys = Object.keys(localStorage);
       for (const k of keys) {
@@ -528,71 +657,9 @@ export class LocalStorageDatabaseAdapter implements IDatabaseAdapter {
           localStorage.removeItem(k);
         }
       }
+      localStorage.setItem(CLEAN_VERSION_FLAG, 'true');
     } catch {
       // ignore
     }
   }
-}
-
-/**
- * Firebase Firestore Adapter Stub (Ready to plug in real Firebase Firestore without altering Services or UI)
- */
-export class FirebaseDatabaseAdapter implements IDatabaseAdapter {
-  private fallback = new LocalStorageDatabaseAdapter();
-
-  // In production, initialize Firebase Auth & Firestore here
-  async getSettings() { return this.fallback.getSettings(); }
-  async saveSettings(settings: SchoolSettings) { return this.fallback.saveSettings(settings); }
-  async getStudents() { return this.fallback.getStudents(); }
-  async saveStudent(student: Student) { return this.fallback.saveStudent(student); }
-  async deleteStudent(id: string) { return this.fallback.deleteStudent(id); }
-  async getParents() { return this.fallback.getParents(); }
-  async saveParent(parent: Parent) { return this.fallback.saveParent(parent); }
-  async getTeachers() { return this.fallback.getTeachers(); }
-  async saveTeacher(teacher: Teacher) { return this.fallback.saveTeacher(teacher); }
-  async deleteTeacher(id: string) { return this.fallback.deleteTeacher(id); }
-  async getEmployees() { return this.fallback.getEmployees(); }
-  async saveEmployee(employee: Employee) { return this.fallback.saveEmployee(employee); }
-  async getClasses() { return this.fallback.getClasses(); }
-  async saveClass(cls: ClassGrade) { return this.fallback.saveClass(cls); }
-  async getSections() { return this.fallback.getSections(); }
-  async saveSection(section: Section) { return this.fallback.saveSection(section); }
-  async getSubjects() { return this.fallback.getSubjects(); }
-  async saveSubject(subject: Subject) { return this.fallback.saveSubject(subject); }
-  async getTimetable() { return this.fallback.getTimetable(); }
-  async saveTimetableSlot(slot: TimetableSlot) { return this.fallback.saveTimetableSlot(slot); }
-  async deleteTimetableSlot(id: string) { return this.fallback.deleteTimetableSlot(id); }
-  async getAttendance() { return this.fallback.getAttendance(); }
-  async recordAttendance(records: AttendanceRecord[]) { return this.fallback.recordAttendance(records); }
-  async getGrades() { return this.fallback.getGrades(); }
-  async saveGrade(grade: GradeRecord) { return this.fallback.saveGrade(grade); }
-  async getCertificates() { return this.fallback.getCertificates(); }
-  async saveCertificate(cert: Certificate) { return this.fallback.saveCertificate(cert); }
-  async getTuitionFees() { return this.fallback.getTuitionFees(); }
-  async saveTuitionFee(fee: TuitionFee) { return this.fallback.saveTuitionFee(fee); }
-  async getReceipts() { return this.fallback.getReceipts(); }
-  async saveReceipt(receipt: PaymentReceipt) { return this.fallback.saveReceipt(receipt); }
-  async getExpenses() { return this.fallback.getExpenses(); }
-  async saveExpense(expense: Expense) { return this.fallback.saveExpense(expense); }
-  async getPayroll() { return this.fallback.getPayroll(); }
-  async savePayroll(payroll: PayrollRecord) { return this.fallback.savePayroll(payroll); }
-  async getRoutes() { return this.fallback.getRoutes(); }
-  async saveRoute(route: TransportRoute) { return this.fallback.saveRoute(route); }
-  async getDrivers() { return this.fallback.getDrivers(); }
-  async saveDriver(driver: Driver) { return this.fallback.saveDriver(driver); }
-  async getVehicles() { return this.fallback.getVehicles(); }
-  async saveVehicle(vehicle: Vehicle) { return this.fallback.saveVehicle(vehicle); }
-  async getAnnouncements() { return this.fallback.getAnnouncements(); }
-  async saveAnnouncement(announcement: Announcement) { return this.fallback.saveAnnouncement(announcement); }
-  async deleteAnnouncement(id: string) { return this.fallback.deleteAnnouncement(id); }
-  async getNotifications() { return this.fallback.getNotifications(); }
-  async markNotificationRead(id: string) { return this.fallback.markNotificationRead(id); }
-  async addNotification(notif: NotificationItem) { return this.fallback.addNotification(notif); }
-  async getMessages() { return this.fallback.getMessages(); }
-  async sendMessage(message: MessageItem) { return this.fallback.sendMessage(message); }
-  async getAuditLogs() { return this.fallback.getAuditLogs(); }
-  async addAuditLog(log: AuditLog) { return this.fallback.addAuditLog(log); }
-  async getSmartAlerts() { return this.fallback.getSmartAlerts(); }
-  async resolveSmartAlert(id: string) { return this.fallback.resolveSmartAlert(id); }
-  async resetToInitialDemo() { return this.fallback.resetToInitialDemo(); }
 }

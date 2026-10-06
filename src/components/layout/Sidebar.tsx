@@ -26,7 +26,7 @@ import {
   Bell,
   MessageSquare,
   BarChart3,
-  Sparkles,
+  Terminal,
   Settings,
   ShieldCheck,
   X
@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { id: 'notifications', label: 'الإشعارات والتنبيهات', icon: Bell, roles: ['admin', 'teacher', 'student', 'parent'] },
     { id: 'messages', label: 'الرسائل والتواصل', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'parent'] },
     { id: 'reports', label: 'التقارير والإحصائيات', icon: BarChart3, roles: ['admin', 'accountant'] },
-    { id: 'ai_assistant', label: 'AI School Assistant', icon: Sparkles, roles: ['admin', 'teacher', 'accountant'] },
+    { id: 'school_assistant', label: 'School Assistant (مساعد المدرسة)', icon: Terminal, roles: ['admin', 'teacher', 'accountant'] },
     { id: 'audit_log', label: 'سجل العمليات', icon: ShieldCheck, roles: ['admin'] },
     { id: 'settings', label: 'إعدادات المدرسة', icon: Settings, roles: ['admin'] },
   ];
@@ -127,9 +127,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   }`}
                 />
                 <span className="truncate">{item.label}</span>
-                {item.id === 'ai_assistant' && (
-                  <span className="mr-auto text-[10px] bg-amber-100 text-amber-800 font-semibold px-1.5 py-0.2 rounded">
-                    AI
+                {item.id === 'school_assistant' && (
+                  <span className="mr-auto text-[10px] bg-blue-100 text-blue-800 font-semibold px-1.5 py-0.2 rounded">
+                    أوامر
                   </span>
                 )}
               </button>
