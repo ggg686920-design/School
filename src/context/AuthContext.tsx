@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             isFirebaseUser: true
           });
         } else {
-          // فحص إن كان هناك مستخدم تجريبي نشط
+          // فحص الجلسة المحلية لمالك المدرسة
           const demoUserRaw = localStorage.getItem('noor_demo_logged_in');
           if (demoUserRaw) {
             try {
@@ -151,7 +151,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       return () => unsubscribe();
     } else {
-      // Firebase غير مهيأ بعد — فحص المستخدم التجريبي
+      // Firebase غير مهيأ بعد — فحص جلسة مالك المدرسة
       const demoUserRaw = localStorage.getItem('noor_demo_logged_in');
       if (demoUserRaw) {
         try {

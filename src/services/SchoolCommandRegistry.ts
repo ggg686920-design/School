@@ -357,16 +357,7 @@ export const SCHOOL_COMMANDS: CommandDefinition[] = [
           stage: s.stage,
           parentPhone: s.parentPhone || '-',
           status: 'منقول رسمياً'
-        })) : [
-          {
-            studentNumber: 'TR-01',
-            fullName: 'سيف علي حسين',
-            gradeName: 'الرابع العلمي',
-            stage: 'إعدادي',
-            parentPhone: '07701234567',
-            status: 'نقل إلى إعدادية الكرخ'
-          }
-        ]
+        })) : []
       };
     }
   },
@@ -402,16 +393,7 @@ export const SCHOOL_COMMANDS: CommandDefinition[] = [
           nationalId: s.nationalId || '-',
           phone: s.phone || '-',
           status: 'مؤرشف'
-        })) : [
-          {
-            studentNumber: 'ARC-104',
-            fullName: 'حسين رائد عبد الأمير',
-            gradeName: 'الثالث المتوسط',
-            nationalId: '199823412',
-            phone: '07802211990',
-            status: 'مؤرشف (انقطاع)'
-          }
-        ]
+        })) : []
       };
     }
   },
